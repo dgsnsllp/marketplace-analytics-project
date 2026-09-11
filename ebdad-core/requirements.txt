@@ -1,0 +1,15 @@
+duckdb
+lightgbm
+shap
+fastapi
+uvicorn[standard]
+scikit-learn
+pandas
+numpy
+pyarrow
+pytest
+httpx
+psycopg2-binary
+sqlalchemy
+redis
+openai

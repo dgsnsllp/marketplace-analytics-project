@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-BDAD Dashboard - Kurumsal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <nav class="bg-indigo-600 text-white p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">Karar Destek Platformu</h1>
+            <span class="text-sm bg-indigo-500 py-1 px-3 rounded-full shadow-inner">Yapay Zeka Destekli Kurumsal v4</span>
+        </div>
+    </nav>
+
+    <!-- Tab Navigation -->
+    <div class="bg-white shadow-sm border-b sticky top-0 z-40">
+        <div class="container mx-auto px-4">
+            <ul class="flex space-x-8 text-sm font-medium text-gray-500 overflow-x-auto">
+                <li class="py-3 border-b-2 border-indigo-600 text-indigo-600 cursor-pointer tab-link whitespace-nowrap" data-tab="tab-1">Aksiyon Yönetimi</li>
+                <li class="py-3 border-b-2 border-transparent hover:text-indigo-600 hover:border-gray-300 cursor-pointer tab-link whitespace-nowrap" data-tab="tab-2">Raporlama</li>
+                <li class="py-3 border-b-2 border-transparent hover:text-indigo-600 hover:border-gray-300 cursor-pointer tab-link whitespace-nowrap" data-tab="tab-3">Sistem Algoritmaları</li>
+                <li class="py-3 border-b-2 border-transparent hover:text-indigo-600 hover:border-gray-300 cursor-pointer tab-link whitespace-nowrap" data-tab="tab-4">Simülasyon</li>
+                <li class="py-3 border-b-2 border-transparent hover:text-indigo-600 hover:border-gray-300 cursor-pointer tab-link whitespace-nowrap font-bold text-indigo-700 flex items-center" data-tab="tab-5">
+                    ✨ AI Stratejik Danışman
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 mt-4">
+        
+        <!-- TAB 1: Aksiyon Yönetimi -->
+        <div id="tab-1" class="tab-content block">
+            
+            <!-- Tab 1 KPI Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8" id="kpi-cards">
+                <!-- Populated by JS -->
+            </div>
+            
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8 border-l-4 border-indigo-500">
+                <h2 class="text-xl font-semibold mb-4">Politika Tanımları</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="col-span-1 bg-gray-50 p-4 border rounded">
+                        <h3 class="font-bold text-sm mb-3 text-gray-700 border-b pb-2">Yeni Kural / Politika Tanımla</h3>
+                        <form id="policy-form" onsubmit="createPolicy(event)">
+                            <div class="mb-2">
+                                <label class="block text-xs font-semibold text-gray-600">Kural Adı</label>
+                                <input type="text" id="pol-name" required class="w-full border rounded p-1 text-sm" placeholder="Örn: Görsel Eksikliği">
+                            </div>
+                            <div class="mb-2">
+                                <label class="block text-xs font-semibold text-gray-600">Hedef Özellik (Feature)</label>
+                                <select id="pol-feature" class="w-full border rounded p-1 text-sm">
+                                    <option value="image_count">Görsel Sayısı (image_count)</option>
+                                    <option value="base_price">Taban Fiyat (base_price)</option>
+                                    <option value="variant_count">Varyant Sayısı (variant_count)</option>
+                                    <option value="description_word_count">Açıklama Kelime Sayısı (desc_word_count)</option>
+                                    <option value="has_size_chart">Beden Tablosu Var Mı? (has_size_chart)</option>
+                                </select>
+                            </div>
+                            <div class="mb-2 grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600">Operatör</label>
+                                    <select id="pol-op" class="w-full border rounded p-1 text-sm">
+                                        <option value="<=">&lt;=</option>
+                                        <option value=">=">&gt;=</option>
+                                        <option value="==">==</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-600">Eşik Değer (Threshold)</label>
+                                    <input type="number" id="pol-thresh" step="0.01" required class="w-full border rounded p-1 text-sm">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="block text-xs font-semibold text-gray-600">Önerilen Aksiyon</label>
+                                <input type="text" id="pol-action" required class="w-full border rounded p-1 text-sm" placeholder="Örn: En az 2 görsel ekle">
+                            </div>
+                            <button type="submit" class="bg-indigo-600 text-white w-full py-2 rounded text-sm hover:bg-indigo-700 transition">Politikayı Kaydet</button>
+                        </form>
+                    </div>
+                    <div class="col-span-2 bg-gray-50 p-4 border rounded h-72 overflow-y-auto">
+                        <h3 class="font-bold text-sm mb-3 text-gray-700 border-b pb-2">Aktif Politikalar (Kural Motoru)</h3>
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead>
+                                <tr class="bg-gray-200 text-gray-600 sticky top-0">
+                                    <th class="p-2">Kural Adı</th>
+                                    <th class="p-2">Koşul (Condition)</th>
+                                    <th class="p-2">Önerilen Aksiyon</th>
+                                </tr>
+                            </thead>
+                            <tbody id="policy-list-body">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <h2 class="text-xl font-semibold mb-4">Aksiyon Yönetim Panosu</h2>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-6" id="kanban-columns">
+                    <div class="bg-gray-50 p-4 rounded border flex flex-col h-96">
+                        <h3 class="font-bold text-indigo-700 mb-2 border-b pb-2 flex justify-between">
+                            <span>Bekleyen Aksiyonlar</span>
+                            <span class="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded-full" id="kb-pending-count">0</span>
+                        </h3>
+                        <div id="kb-pending" class="flex-grow overflow-y-auto space-y-3 pr-1"></div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded border flex flex-col h-96">
+                        <h3 class="font-bold text-orange-600 mb-2 border-b pb-2 flex justify-between">
+                            <span>Uygulandı (Değerlendirmede)</span>
+                            <span class="bg-orange-100 text-orange-800 text-xs px-2 py-1 rounded-full" id="kb-applied-count">0</span>
+                        </h3>
+                        <div id="kb-applied" class="flex-grow overflow-y-auto space-y-3 pr-1"></div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded border flex flex-col h-96">
+                        <h3 class="font-bold text-green-600 mb-2 border-b pb-2 flex justify-between">
+                            <span>Çözüldü (Başarılı)</span>
+                            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full" id="kb-resolved-count">0</span>
+                        </h3>
+                        <div id="kb-resolved" class="flex-grow overflow-y-auto space-y-3 pr-1"></div>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded border flex flex-col h-96">
+                        <h3 class="font-bold text-gray-500 mb-2 border-b pb-2 flex justify-between">
+                            <span>Reddedilen Aksiyonlar</span>
+                            <span class="bg-gray-200 text-gray-700 text-xs px-2 py-1 rounded-full" id="kb-rejected-count">0</span>
+                        </h3>
+                        <div id="kb-rejected" class="flex-grow overflow-y-auto space-y-3 pr-1"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- TAB 2: Causal ROI & Raporlama -->
+        <div id="tab-2" class="tab-content hidden">
+            
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                
+                <div id="roi-content">
+                    <p class="text-gray-500">ROI verileri yükleniyor...</p>
+                </div>
+            </div>
+
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8 border-t-4 border-green-500">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Aksiyon Geçmişi & Karar Özeti (Çözülenler)</h2>
+                    <div class="flex space-x-2">
+                        <select id="filter-action-type" class="border rounded p-1 text-sm bg-gray-50" onchange="filterHistory()">
+                            <option value="">Tüm Aksiyon Tipleri</option>
+                            <option value="IMAGE">Görsel Güncellemesi</option>
+                            <option value="PRICE">Fiyat Optimizasyonu</option>
+                            <option value="VARIANT">Varyant Ekleme</option>
+                            <option value="CONTENT">İçerik Güncellemesi</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto h-96 border rounded">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 text-xs leading-normal sticky top-0 shadow-sm z-10">
+                                <th class="py-3 px-4">Ürün ID</th>
+                                <th class="py-3 px-4">Sorun (Politika)</th>
+                                <th class="py-3 px-4">Uygulanan Aksiyon</th>
+                                <th class="py-3 px-4">Net Etki (Uplift %)</th>
+                                <th class="py-3 px-4">Ciroya Etkisi (GMV)</th>
+                                <th class="py-3 px-4 text-center">Detaylar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body" class="text-gray-600 text-sm font-light">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+        </div>
+
+        <!-- TAB 3: Sistem Algoritmaları -->
+        <div id="tab-3" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800">Sistem Algoritmaları & Teşhis Merkezi</h2>
+                        <p class="text-gray-600 mt-2">E-BDAD v4, satışlardaki sürtünmeleri otonom bir şekilde tespit etmek ve uygulanan aksiyonların nedensel etkisini (causality) ölçmek için birbiriyle entegre Makine Öğrenmesi (ML) ve Ekonometrik motorlar topluluğu kullanır.</p>
+                    </div>
+                    <div class="flex flex-col space-y-2 shrink-0 ml-4">
+                        <div class="bg-gray-100 border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium flex items-center shadow-sm">
+                            <span class="w-2.5 h-2.5 rounded-full bg-green-500 mr-2 animate-pulse"></span>
+                            Model Eğitimi: Otomatik (Periyot: 6 Saat)
+                        </div>
+                        <button onclick="saveMLConfig()" id="btn-apply-ml" class="bg-teal-600 text-white px-4 py-2 rounded shadow hover:bg-teal-700 transition font-medium flex items-center justify-center">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            Parametreleri Uygula
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="bg-indigo-50 p-5 rounded-lg border border-indigo-100">
+                        <div class="flex items-center mb-3">
+                            <span class="bg-indigo-500 text-white p-2 rounded-lg mr-3">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </span>
+                            <h3 class="text-lg font-bold text-indigo-900">1. LightGBM Sınıflandırıcı</h3>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-2">Ürün özellikleri ve müşteri oturum verilerini analiz ederek, ziyaretin satın almaya dönüşme (conversion) olasılığını tahmin eder.</p>
+                        <div class="text-xs bg-white p-3 rounded border border-indigo-200 mt-3">
+                            <div class="flex justify-between font-bold mb-2 border-b pb-1">
+                                <span>Durum: <span class="text-green-600">Aktif</span></span>
+                                <span>ROC-AUC: 0.82</span>
+                            </div>
+                            <div class="space-y-2 mt-2">
+                                <div>
+                                    <div class="flex justify-between text-[10px] text-gray-500 mb-1"><span>Fiyat (Price)</span><span>35% Etki</span></div>
+                                    <div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-indigo-600 h-1.5 rounded-full" style="width: 35%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-[10px] text-gray-500 mb-1"><span>Görsel (Image Count)</span><span>28% Etki</span></div>
+                                    <div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-indigo-500 h-1.5 rounded-full" style="width: 28%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-[10px] text-gray-500 mb-1"><span>Açıklama Uzunluğu</span><span>20% Etki</span></div>
+                                    <div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-indigo-400 h-1.5 rounded-full" style="width: 20%"></div></div>
+                                </div>
+                                <div>
+                                    <div class="flex justify-between text-[10px] text-gray-500 mb-1"><span>Varyant (Variant Count)</span><span>17% Etki</span></div>
+                                    <div class="w-full bg-gray-200 rounded-full h-1.5"><div class="bg-indigo-300 h-1.5 rounded-full" style="width: 17%"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                        <details class="mt-4 bg-white border border-indigo-200 rounded-lg shadow-sm group">
+                            <summary class="font-semibold text-indigo-800 p-3 cursor-pointer select-none flex justify-between items-center bg-indigo-50 hover:bg-indigo-100 transition rounded-lg group-open:rounded-b-none text-sm">
+                                <span>Çalışma Mantığı & Matematiksel Detay</span>
+                                <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </summary>
+                            <div class="p-4 text-sm text-gray-700 bg-white rounded-b-lg border-t border-indigo-100">
+                                <p><strong>LightGBM (Light Gradient Boosting Machine)</strong> algoritması, karar ağaçlarını birleştirerek öğrenen (gradient boosting) yüksek performanslı bir modeldir.</p>
+                                <ul class="list-disc pl-5 mt-2 space-y-1">
+                                    <li>Kullanıcıların geçmiş oturum verileri ve ürün özellikleri girdi olarak kullanılır.</li>
+                                    <li>Model, bu özelliklere bakarak ziyaretin <strong>satın alma (conversion) olasılığını</strong> hesaplar.</li>
+                                </ul>
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="bg-teal-50 p-5 rounded-lg border border-teal-100">
+                        <div class="flex items-center mb-3">
+                            <span class="bg-teal-500 text-white p-2 rounded-lg mr-3">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                            </span>
+                            <h3 class="text-lg font-bold text-teal-900">2. SHAP (TreeExplainer) Sürtünme Teşhisi</h3>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-2">LightGBM'in tahminlerini tersine mühendislikle (Shapley Değerleri) açıklar ve dönüşüm kaybına sebep olan kök nedensel özellikleri (fiyat, eksik resim vb.) matematiksel olarak teşhis eder.</p>
+                        <div class="text-xs bg-white p-3 rounded border border-teal-200 mt-3">
+                            <div class="mb-3">
+                                <label class="block text-gray-700 font-bold mb-1">Negatif Sürtünme Eşiği (Threshold Tau)</label>
+                                <div class="flex items-center">
+                                    <input type="range" id="ml-shap-tau" min="-0.20" max="0.0" step="0.01" value="-0.05" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer mr-3">
+                                    <span id="ml-shap-val" class="font-mono bg-gray-100 px-2 py-1 rounded border">-0.05</span>
+                                </div>
+                                <p class="text-[10px] text-gray-500 mt-1">LightGBM tahminini bu değerden fazla düşüren özellikler "sürtünme" sayılır.</p>
+                            </div>
+                            <div class="border-t pt-2 text-gray-600">
+                                <strong>Mekanizma:</strong> Shapley Additive Explanations (Oyun Teorisi)
+                            </div>
+                        </div>
+                        <details class="mt-4 bg-white border border-teal-200 rounded-lg shadow-sm group">
+                            <summary class="font-semibold text-teal-800 p-3 cursor-pointer select-none flex justify-between items-center bg-teal-50 hover:bg-teal-100 transition rounded-lg group-open:rounded-b-none text-sm">
+                                <span>Çalışma Mantığı & Matematiksel Detay</span>
+                                <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </summary>
+                            <div class="p-4 text-sm text-gray-700 bg-white rounded-b-lg border-t border-teal-100">
+                                <p><strong>SHAP (SHapley Additive exPlanations)</strong>, makine öğrenmesi kararlarını açıklamak için Kooperatif Oyun Teorisi'ni kullanır.</p>
+                                <ul class="list-disc pl-5 mt-2 space-y-1">
+                                    <li>Her bir ürün özelliği (fiyat, görsel) bir oyundaki "oyuncu", dönüşüm olasılığı ise "oyunun sonucu" kabul edilir.</li>
+                                    <li>Algoritma, bir özelliğin dönüşüme yaptığı <strong>marjinal katkıyı (Shapley değeri)</strong> hesaplar.</li>
+                                    <li>Katkısı negatif yönde büyükse (örn: Tau Eşiği'ni aşarsa), bu bir <strong>sürtünme</strong> olarak teşhis edilir.</li>
+                                </ul>
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="bg-purple-50 p-5 rounded-lg border border-purple-100">
+                        <div class="flex items-center mb-3">
+                            <span class="bg-purple-500 text-white p-2 rounded-lg mr-3">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                            </span>
+                            <h3 class="text-lg font-bold text-purple-900">3. K-Means Kümeleme (Segmentasyon)</h3>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-2">Müşterileri davranışsal veri metriklerine (sepette bekleme, sayfa gezinme süresi vb.) göre kümelere ayırarak kişiselleştirilmiş aksiyon kararları alınmasını sağlar.</p>
+                        <div class="text-xs bg-white p-3 rounded border border-purple-200 mt-3">
+                            <div class="mb-3 flex items-center justify-between">
+                                <label class="text-gray-700 font-bold">Persona Küme Sayısı (k)</label>
+                                <input type="number" id="ml-kmeans-k" min="2" max="10" value="4" class="border rounded px-2 py-1 w-16 text-center focus:outline-none focus:border-purple-500">
+                            </div>
+                            <div id="kmeans-persona-container" class="grid grid-cols-2 gap-2 mt-2">
+                                <!-- Dinamik olarak JS tarafından doldurulacak -->
+                                <div class="bg-purple-50 border border-purple-100 rounded p-1.5 text-center">
+                                    <div class="text-[10px] text-gray-500 uppercase tracking-wide">Hızlı Alıcılar</div>
+                                    <div class="font-bold text-purple-700">%30</div>
+                                </div>
+                                <div class="bg-blue-50 border border-blue-100 rounded p-1.5 text-center">
+                                    <div class="text-[10px] text-gray-500 uppercase tracking-wide">Fiyat Odaklı</div>
+                                    <div class="font-bold text-blue-700">%25</div>
+                                </div>
+                                <div class="bg-yellow-50 border border-yellow-100 rounded p-1.5 text-center">
+                                    <div class="text-[10px] text-gray-500 uppercase tracking-wide">Kararsız Gezgin</div>
+                                    <div class="font-bold text-yellow-700">%20</div>
+                                </div>
+                                <div class="bg-gray-50 border border-gray-200 rounded p-1.5 text-center">
+                                    <div class="text-[10px] text-gray-500 uppercase tracking-wide">Terk Edenler</div>
+                                    <div class="font-bold text-gray-600">%25</div>
+                                </div>
+                            </div>
+                        </div>
+                        <details class="mt-4 bg-white border border-purple-200 rounded-lg shadow-sm group">
+                            <summary class="font-semibold text-purple-800 p-3 cursor-pointer select-none flex justify-between items-center bg-purple-50 hover:bg-purple-100 transition rounded-lg group-open:rounded-b-none text-sm">
+                                <span>Çalışma Mantığı & Matematiksel Detay</span>
+                                <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </summary>
+                            <div class="p-4 text-sm text-gray-700 bg-white rounded-b-lg border-t border-purple-100">
+                                <p><strong>K-Means</strong>, veri noktalarını özellik benzerliklerine göre ayıran denetimsiz kümeleme algoritmasıdır.</p>
+                                <ul class="list-disc pl-5 mt-2 space-y-1">
+                                    <li>Oturum süreleri, tıklamalar gibi davranışsal vektörler oluşturulur.</li>
+                                    <li><strong>Euclidean mesafe optimizasyonu</strong> ile birbirine en yakın noktalardan oluşan k adet (örn: 4) ana alışverişçi personasına ayrılır.</li>
+                                </ul>
+                            </div>
+                        </details>
+                    </div>
+
+                    <div class="bg-orange-50 p-5 rounded-lg border border-orange-100">
+                        <div class="flex items-center mb-3">
+                            <span class="bg-orange-500 text-white p-2 rounded-lg mr-3">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            </span>
+                            <h3 class="text-lg font-bold text-orange-900">4. DiD Nedensel Etki (Causal Uplift)</h3>
+                        </div>
+                        <p class="text-sm text-gray-700 mb-2">Uygulanan aksiyonların gerçek ve izole (nedensel) etkisini ölçmek için "Farkların Farkı" (Difference-in-Differences) metodolojisini kullanır. Dış etkenleri (sezonsallık vb.) filtreler.</p>
+                        <div class="text-xs bg-white p-3 rounded border border-orange-200 mt-3">
+                            <div class="mb-3 flex items-center justify-between">
+                                <label class="text-gray-700 font-bold">Gözlem Penceresi (Window)</label>
+                                <select id="ml-did-window" class="border rounded px-2 py-1 focus:outline-none focus:border-orange-500">
+                                    <option value="7">7 Gün</option>
+                                    <option value="14" selected>14 Gün</option>
+                                    <option value="30">30 Gün</option>
+                                </select>
+                            </div>
+                            <div class="bg-orange-50 p-2 rounded border border-orange-100 mb-2">
+                                <div class="font-mono text-center text-orange-800">Uplift = (T_post - T_pre) - (C_post - C_pre)</div>
+                            </div>
+                            <div class="flex items-center justify-center space-x-4 text-[10px] text-gray-500">
+                                <div class="flex flex-col items-center">
+                                    <div class="w-2 h-2 bg-blue-500 rounded-full mb-1"></div>
+                                    <span>Kontrol Grubu</span>
+                                </div>
+                                <div class="flex flex-col items-center">
+                                    <div class="w-2 h-2 bg-orange-500 rounded-full mb-1"></div>
+                                    <span>Test Grubu</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 border-t border-orange-100 pt-3">
+                            <h4 class="font-bold text-sm text-orange-900 mb-2">Son Çözülen Aksiyonlar (DiD Analizi)</h4>
+                            <div id="ml-did-last-actions" class="space-y-2 text-xs">
+                                <div class="text-gray-500 text-center py-2 italic">Aksiyonlar yükleniyor...</div>
+                            </div>
+                        </div>
+                        
+                        <details class="mt-4 bg-white border border-orange-200 rounded-lg shadow-sm group">
+                            <summary class="font-semibold text-orange-800 p-3 cursor-pointer select-none flex justify-between items-center bg-orange-50 hover:bg-orange-100 transition rounded-lg group-open:rounded-b-none text-sm">
+                                <span>Çalışma Mantığı & Matematiksel Detay</span>
+                                <svg class="w-4 h-4 transform group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </summary>
+                            <div class="p-4 text-sm text-gray-700 bg-white rounded-b-lg border-t border-orange-100">
+                                <p><strong>Farkların Farkı (DiD)</strong>, uygulanan aksiyonun gerçek/nedensel etkisini ölçen ekonometrik modeldir.</p>
+                                <ul class="list-disc pl-5 mt-2 space-y-1">
+                                    <li><span class="font-mono bg-gray-100 px-1 text-xs">(T_sonra - T_önce) - (K_sonra - K_önce)</span> formülü kullanılır.</li>
+                                    <li>Pazar trendlerini izole ederek net müdahale etkisini hesaplar.</li>
+                                </ul>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Ürün Kataloğu & Simülatör -->
+        <div id="tab-4" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold">Ürün Sağlık Teşhis Kataloğu</h2>
+                    <div class="flex space-x-2">
+                        <button onclick="changePage(-1)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm">&larr; Önceki</button>
+                        <span id="current-page" class="py-1 text-sm font-bold px-2">Sayfa 1</span>
+                        <button onclick="changePage(1)" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded text-sm">Sonraki &rarr;</button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4 p-4 bg-gray-50 border rounded">
+                    <div class="flex flex-wrap items-center gap-3 w-full">
+                        <div>
+                            <label class="text-xs text-gray-500 font-bold block mb-1">Aksiyon / Tespit Edilen Sorun</label>
+                            <select id="filter-action" class="border p-1 rounded text-sm w-48">
+                                <option value="">Tümü</option>
+                                <option value="Yüksek Fiyat">Yüksek Fiyat</option>
+                                <option value="Yetersiz Görsel">Yetersiz Görsel</option>
+                                <option value="Yetersiz Açıklama">Çok Kısa Açıklama</option>
+                                <option value="Varyant Eksikliği">Eksik Varyant</option>
+                                <option value="No Issue">Sorunsuz Ürünler</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 font-bold block mb-1">Aksiyon Kutusu (Durum)</label>
+                            <select id="filter-status" class="border p-1 rounded text-sm w-40">
+                                <option value="">Tümü</option>
+                                <option value="PENDING">Bekleyen</option>
+                                <option value="APPLIED">Değerlendiriliyor</option>
+                                <option value="RESOLVED">Çözüldü</option>
+                                <option value="DISMISSED">Reddedildi</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 font-bold block mb-1">Başlangıç Tarihi</label>
+                            <input type="date" id="filter-start" class="border p-1 rounded text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 font-bold block mb-1">Bitiş Tarihi</label>
+                            <input type="date" id="filter-end" class="border p-1 rounded text-sm">
+                        </div>
+                        <div class="mt-5 flex space-x-2">
+                            <button onclick="applyFilters()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1 rounded text-sm font-semibold transition">Filtreyi Uygula</button>
+                            <button onclick="resetFilters()" class="bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 px-3 py-1 rounded text-sm font-semibold transition">Filtreleri Sıfırla</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto h-[600px] border rounded">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal sticky top-0 z-10 shadow-sm">
+                                <th class="py-3 px-6">Ürün ID</th>
+                                <th class="py-3 px-6">Dönüşüm Oranı</th>
+                                <th class="py-3 px-6">Sağlık Skoru</th>
+                                <th class="py-3 px-6">Tespit Edilen Sorun</th>
+                                <th class="py-3 px-6 text-center">Aksiyon</th>
+                            </tr>
+                        </thead>
+                        <tbody id="product-table-body" class="text-gray-600 text-sm font-light">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 5: AI Stratejik Danışman -->
+        <div id="tab-5" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md mb-8 border-l-4 border-indigo-500">
+                <div class="flex justify-between items-center mb-6 border-b pb-4">
+                    <h2 class="text-xl font-semibold flex items-center gap-2">
+                        ✨ Sistem Denetçisi (AI Auditor)
+                    </h2>
+                    <div id="ai-status-badge" class="bg-gray-100 text-gray-500 px-3 py-1 rounded-full text-xs font-bold border border-gray-200">
+                        Lokal LLM: Kontrol Ediliyor...
+                    </div>
+                </div>
+
+                <div class="text-sm text-gray-600 mb-6 max-w-3xl">
+                    <p>Yapay zeka asistanı; platformun karar verme mantığını, yöneticilerin aksiyonları reddetme nedenlerini ve finansal etkiyi (DiD) analiz ederek sistem algoritmalarının optimize edilmesi için stratejik öneriler sunar.</p>
+                </div>
+
+                <button id="btn-run-audit" onclick="runAIAudit()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg shadow transition w-full md:w-auto flex items-center justify-center">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Kapsamlı Sistem Denetimini Başlat
+                </button>
+
+                <!-- Loading State -->
+                <div id="ai-loading" class="hidden mt-8 text-center py-12 border-2 border-dashed border-gray-200 rounded-lg">
+                    <svg class="animate-spin h-10 w-10 text-indigo-600 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="text-gray-500 font-medium">Veritabanı metrikleri LLM'e (Llama 3.2) aktarılıyor ve denetim raporu üretiliyor...</p>
+                    <p class="text-xs text-gray-400 mt-2">Bu işlem birkaç saniye sürebilir.</p>
+                </div>
+
+                <!-- Results State -->
+                <div id="ai-results" class="hidden mt-8">
+                    <!-- Top KPI Bar -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 shadow-sm text-center">
+                            <p class="text-xs text-indigo-500 font-bold uppercase tracking-wider mb-1">Taranan Aksiyon</p>
+                            <h3 id="ai-kpi-scanned" class="text-2xl font-black text-indigo-900">-</h3>
+                        </div>
+                        <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 shadow-sm text-center">
+                            <p class="text-xs text-blue-500 font-bold uppercase tracking-wider mb-1">Onay / Red Oranı</p>
+                            <h3 id="ai-kpi-rates" class="text-xl font-black text-blue-900">-</h3>
+                        </div>
+                        <div class="bg-green-50 border border-green-100 rounded-lg p-4 shadow-sm text-center">
+                            <p class="text-xs text-green-500 font-bold uppercase tracking-wider mb-1">Zaman Tasarrufu</p>
+                            <h3 id="ai-kpi-time" class="text-2xl font-black text-green-900">-</h3>
+                        </div>
+                        <div class="bg-purple-50 border border-purple-100 rounded-lg p-4 shadow-sm text-center">
+                            <p class="text-xs text-purple-500 font-bold uppercase tracking-wider mb-1">Korunan Marj</p>
+                            <h3 id="ai-kpi-margin" class="text-2xl font-black text-purple-900">-</h3>
+                        </div>
+                    </div>
+
+                    <!-- Diagnostics List -->
+                    <div class="bg-gray-50 border rounded-lg p-5 mb-8 shadow-inner">
+                        <h3 class="font-bold text-gray-800 border-b pb-2 mb-4">Stratejik Teşhis ve Aksiyon Listesi</h3>
+                        <div id="ai-diagnostics-container" class="space-y-4">
+                            <!-- Rows will be injected here via JS -->
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Modals -->
+    <!-- What-If Simulator Modal -->
+    <div id="simulator-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full z-50 transition-opacity">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-2xl rounded-lg bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-2xl leading-6 font-bold text-gray-900" id="modal-title">What-If Simülatörü</h3>
+                <p class="text-sm text-gray-500 mt-2">Dönüşüme olan etkiyi görmek için hipotetik (varsayımsal) değişiklikleri test edin.</p>
+                
+                <div class="mt-4 mb-6 text-left">
+                    <h4 class="font-semibold mb-2 text-gray-700">Ürün Mevcut Durumu vs. Kategori Ortalaması</h4>
+                    <div class="overflow-x-auto border rounded-lg shadow-sm">
+                        <table class="w-full text-sm text-left text-gray-600">
+                            <thead class="text-xs text-gray-700 bg-gray-50 border-b">
+                                <tr>
+                                    <th class="px-4 py-2">Özellik</th>
+                                    <th class="px-4 py-2 text-center">Mevcut Değer</th>
+                                    <th class="px-4 py-2 text-center">Kategori Ortalaması</th>
+                                    <th class="px-4 py-2">Fark & Teşhis</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sim-benchmark-body">
+                                <tr><td colspan="4" class="text-center py-4 text-gray-400 italic">Değerler yükleniyor...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
+                    <div class="border-r pr-6">
+                        <h4 class="font-semibold mb-4 text-indigo-700">Parametreleri Ayarla</h4>
+                        <input type="hidden" id="sim-pid">
+                        <label class="block text-sm text-gray-600 font-medium mb-1">Yeni Görsel Sayısı</label>
+                        <input type="number" id="sim-img" class="w-full border border-gray-300 rounded p-2 mb-3 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none">
+                        
+                        <label class="block text-sm text-gray-600 font-medium mb-1">Yeni Fiyat (TL)</label>
+                        <input type="number" step="0.01" id="sim-price" class="w-full border border-gray-300 rounded p-2 mb-3 focus:border-indigo-500 outline-none">
+                        
+                        <label class="block text-sm text-gray-600 font-medium mb-1">Yeni Varyant Sayısı</label>
+                        <input type="number" id="sim-variant-count" class="w-full border border-gray-300 rounded p-2 mb-4 focus:border-indigo-500 outline-none" placeholder="Örn: 3">
+                        
+                        <label class="block text-sm text-gray-600 font-medium mb-1">Yeni Açıklama Uzunluğu (Kelime)</label>
+                        <input type="number" id="sim-desc" class="w-full border border-gray-300 rounded p-2 mb-4 focus:border-indigo-500 outline-none">
+                        
+                        <button onclick="runSimulation()" class="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 w-full font-medium transition">Simülasyonu Başlat</button>
+                    </div>
+                    <div>
+                        <h4 class="font-semibold mb-4 text-green-700">Canlı Sonuçlar</h4>
+                        <div id="sim-results" class="bg-gray-50 p-4 rounded border h-full shadow-inner flex items-center justify-center">
+                            <p class="text-gray-500 italic">Sonuçları görmek için simülasyonu başlatın...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="items-center px-4 py-3 mt-6 border-t pt-4 text-right">
+                    <button id="close-sim-modal" class="px-6 py-2 bg-gray-200 text-gray-800 rounded font-medium shadow hover:bg-gray-300 transition">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Detail Modal -->
+    <div id="report-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full z-50 transition-opacity">
+        <div class="relative top-10 mx-auto p-6 border w-11/12 md:w-3/4 max-w-5xl shadow-2xl rounded-lg bg-white mb-10">
+            <h3 class="text-2xl font-bold text-gray-900 mb-4 border-b pb-2 flex justify-between items-center" id="report-title">
+                Ürün Teşhis & Ekonometrik Denetim Raporu
+                <button id="close-report-modal-x" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </h3>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Section 1: Product Catalog -->
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 mb-3 border-b pb-1">1. Ürün Kataloğu & Künye Bilgileri</h4>
+                    <div class="bg-gray-50 p-4 rounded-lg border text-sm space-y-2">
+                        <div class="grid grid-cols-2 gap-2">
+                            <span class="text-gray-500 font-semibold">Ürün Kodu:</span><span id="rep-prod-id" class="font-mono text-gray-900">-</span>
+                            <span class="text-gray-500 font-semibold">Kategori:</span><span id="rep-category" class="text-gray-900">-</span>
+                            <span class="text-gray-500 font-semibold">Birim Fiyat:</span><span id="rep-price" class="text-gray-900">-</span>
+                            <span class="text-gray-500 font-semibold">Görsel Adedi:</span><span id="rep-image" class="text-gray-900">-</span>
+                            <span class="text-gray-500 font-semibold">Varyant Sayısı:</span><span id="rep-variant" class="text-gray-900">-</span>
+                            <span class="text-gray-500 font-semibold">Beden Kılavuzu:</span><span id="rep-size" class="text-gray-900">-</span>
+                            <span class="text-gray-500 font-semibold">Açıklama (Kelime):</span><span id="rep-desc" class="text-gray-900">-</span>
+                        </div>
+                        <div class="border-t pt-2 mt-2">
+                            <div class="flex flex-col">
+                                <span class="text-gray-500 font-semibold">Teşhis Edilen Sorun:</span>
+                                <span id="rep-issue" class="text-red-600 font-medium">-</span>
+                            </div>
+                            <div class="flex flex-col mt-1">
+                                <span class="text-gray-500 font-semibold">Uygulanan Aksiyon:</span>
+                                <span id="rep-action" class="text-indigo-600 font-medium">-</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2 mt-1">
+                                <div><span class="text-gray-500 font-semibold">Müdahale Tarihi (t0):</span><br><span id="rep-date" class="text-gray-900 text-xs">-</span></div>
+                                <div><span class="text-gray-500 font-semibold">Analiz Penceresi:</span><br><span id="rep-window" class="text-gray-900 text-xs">-</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Twin Match -->
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 mb-3 border-b pb-1 flex items-center" title="Müdahalenin net etkisini ölçmek için referans alınan, müdahale edilmemiş eşdeğer ürün.">
+                        2. İkiz Kontrol Grubu Eşleşmesi (Counterfactual)
+                        <span class="ml-2 flex items-center justify-center w-4 h-4 rounded-full bg-gray-200 text-gray-500 text-[10px] font-bold cursor-help">i</span>
+                    </h4>
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 text-sm h-full">
+                        <div class="flex items-start mb-2">
+                            <svg class="w-6 h-6 text-blue-500 mr-2 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path></svg>
+                            <div>
+                                <span class="font-semibold text-blue-900 block">Eşleşen İkiz Ürün (Kontrol)</span>
+                                <span id="rep-twin-id" class="font-mono text-blue-800 text-lg block my-1">-</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2 mt-2 bg-white p-2 rounded border border-blue-100">
+                            <span class="text-gray-500 font-semibold">Birim Fiyat:</span><span id="rep-twin-price" class="text-gray-900">-</span>
+                            <span class="text-gray-500 font-semibold">Görsel Adedi:</span><span id="rep-twin-image" class="text-gray-900">-</span>
+                            <span class="text-gray-500 font-semibold">Varyant Sayısı:</span><span id="rep-twin-variant" class="text-gray-900">-</span>
+                            <span class="text-gray-500 font-semibold">Açıklama (Kelime):</span><span id="rep-twin-desc" class="text-gray-900">-</span>
+                        </div>
+                        <p class="text-blue-700 mt-2 font-medium">Eşleştirme Gerekçesi:</p>
+                        <p id="rep-twin-reason" class="text-gray-700 italic bg-white p-2 rounded mt-1 border border-blue-100">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 3: Raw Data Table -->
+            <div class="mt-6">
+                <h4 class="font-bold text-lg text-gray-800 mb-3 border-b pb-1">3. Ham Veri Karşılaştırma Tablosu</h4>
+                <div class="overflow-x-auto border rounded-lg">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-100 text-gray-700">
+                            <tr>
+                                <th class="p-3 border-b">Grup</th>
+                                <th class="p-3 border-b text-center">Öncesi Oturum</th>
+                                <th class="p-3 border-b text-center">Öncesi Dönüşüm</th>
+                                <th class="p-3 border-b text-center">Sonrası Oturum</th>
+                                <th class="p-3 border-b text-center">Sonrası Dönüşüm</th>
+                                <th class="p-3 border-b text-center bg-gray-200">Değişim (Δ)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="bg-orange-50 border-b">
+                                <td class="p-3 font-semibold text-orange-900">Müdahale (Treated)</td>
+                                <td id="rep-tr-pre-s" class="p-3 text-center">-</td>
+                                <td id="rep-tr-pre-cr" class="p-3 text-center font-bold">-</td>
+                                <td id="rep-tr-post-s" class="p-3 text-center">-</td>
+                                <td id="rep-tr-post-cr" class="p-3 text-center font-bold text-orange-700">-</td>
+                                <td id="rep-tr-delta" class="p-3 text-center font-bold bg-orange-100">-</td>
+                            </tr>
+                            <tr class="bg-blue-50">
+                                <td class="p-3 font-semibold text-blue-900">Kontrol (Twin)</td>
+                                <td id="rep-ct-pre-s" class="p-3 text-center">-</td>
+                                <td id="rep-ct-pre-cr" class="p-3 text-center font-bold">-</td>
+                                <td id="rep-ct-post-s" class="p-3 text-center">-</td>
+                                <td id="rep-ct-post-cr" class="p-3 text-center font-bold text-blue-700">-</td>
+                                <td id="rep-ct-delta" class="p-3 text-center font-bold bg-blue-100">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Section 4 & 5: Math & Chart -->
+            <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Section 4 -->
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 mb-3 border-b pb-1">4. Açık Matematiksel Formül</h4>
+                    <div class="bg-gray-800 text-green-400 p-4 rounded-lg font-mono text-xs md:text-sm space-y-3 shadow-inner">
+                        <div class="flex flex-col">
+                            <span class="text-gray-400"># Adım 1: Ham Değişim (Treated)</span>
+                            <span>ΔTreated = Sonrası - Öncesi</span>
+                            <span id="math-step-1" class="text-white">-</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-gray-400"># Adım 2: Pazar Trend Değişimi (Control)</span>
+                            <span>ΔControl = Sonrası - Öncesi</span>
+                            <span id="math-step-2" class="text-white">-</span>
+                        </div>
+                        <div class="flex flex-col bg-gray-700 p-2 rounded">
+                            <span class="text-gray-300"># Adım 3: Net Nedensel Uplift (DiD)</span>
+                            <span>DiD = ΔTreated - ΔControl</span>
+                            <span id="math-step-3" class="text-green-300 font-bold text-base">-</span>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-gray-400"># Adım 4: Atfedilen Net Ciro Katkısı</span>
+                            <span>Ciro = (Sonrası Oturum) × (DiD) × (Birim Fiyat)</span>
+                            <span id="math-step-4" class="text-yellow-300 font-bold">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 5 -->
+                <div>
+                    <h4 class="font-bold text-lg text-gray-800 mb-3 border-b pb-1">5. Çıktı Özeti & Görselleştirme</h4>
+                    <div class="grid grid-cols-2 gap-2 mb-4">
+                        <div id="rep-summary-uplift-box" class="bg-green-100 border border-green-300 p-3 rounded-lg text-center">
+                            <div id="rep-summary-uplift-title" class="text-xs text-green-800 font-bold flex items-center justify-center" title="Pazar trendlerinden arındırılmış, doğrudan yapılan müdahalenin sağladığı net dönüşüm artışı.">
+                                Net Nedensel Uplift (DiD)
+                                <span id="rep-summary-uplift-icon" class="ml-1 flex items-center justify-center w-4 h-4 rounded-full bg-green-200 text-green-800 text-[10px] cursor-help">i</span>
+                            </div>
+                            <div id="rep-summary-uplift" class="text-2xl font-black text-green-700">-</div>
+                        </div>
+                        <div class="bg-yellow-100 border border-yellow-300 p-3 rounded-lg text-center">
+                            <div class="text-xs text-yellow-800 font-bold uppercase">Atfedilen Ciro Katkısı</div>
+                            <div id="rep-summary-gmv" class="text-xl md:text-2xl font-black text-yellow-700">-</div>
+                        </div>
+                    </div>
+                    <div class="bg-white border rounded p-2 shadow-sm h-48 w-full flex items-center justify-center">
+                        <canvas id="didChart"></canvas>
+                    </div>
+                    
+                    <!-- Insight Box -->
+                    <div id="rep-insight-container" class="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-blue-900 shadow-sm">
+                        <p id="rep-insight-box">
+                            💡 <strong>Yönetici Özeti:</strong> Bu dönemde kontrol grubunun temsil ettiği pazar trendi %... değişirken, uygulanan aksiyon sayesinde ürünümüz pazarın üzerinde performans göstermiş ve dış faktörlerden arındırılmış net %... uplift ile şirkete ₺... ciro kazandırmıştır.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-6 border-t pt-4 flex justify-between items-center">
+                <span class="text-xs text-gray-500">Değerler Difference-in-Differences (DiD) ekonometrik motoru tarafından üretilmiştir.</span>
+                <button id="close-report-modal" class="px-6 py-2 bg-indigo-600 text-white rounded font-medium shadow hover:bg-indigo-700 transition">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reject Modal -->
+    <div id="reject-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 overflow-y-auto h-full w-full z-50 transition-opacity">
+        <div class="relative top-32 mx-auto p-5 border w-11/12 md:w-1/3 shadow-2xl rounded-lg bg-white">
+            <h3 class="text-xl font-bold text-gray-900 mb-2 border-b pb-2">Aksiyonu Reddetme Nedeni</h3>
+            <div class="mt-4">
+                <input type="hidden" id="reject-action-id">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Neden Seçin</label>
+                <select id="reject-reason-select" class="w-full border border-gray-300 rounded p-2 mb-3 focus:border-indigo-500 outline-none">
+                    <option value="Tedarikçi görsel sağlayamıyor">Tedarikçi görsel sağlayamıyor</option>
+                    <option value="Fiyat anlaşması sabit">Fiyat anlaşması sabit</option>
+                    <option value="Stok tükenecek">Stok tükenecek</option>
+                    <option value="Diğer">Diğer</option>
+                </select>
+                
+                <label class="block text-sm font-medium text-gray-700 mb-1">Serbest Açıklama (Opsiyonel)</label>
+                <textarea id="reject-reason-text" class="w-full border border-gray-300 rounded p-2 mb-4 focus:border-indigo-500 outline-none" rows="3" placeholder="Eklemek istediklerinizi yazın..."></textarea>
+                
+                <div class="flex justify-end space-x-2 border-t pt-4">
+                    <button id="close-reject-modal" class="px-4 py-2 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition">Vazgeç</button>
+                    <button onclick="confirmRejectAction()" class="px-4 py-2 bg-red-600 text-white rounded font-medium hover:bg-red-700 transition">Reddi Onayla</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

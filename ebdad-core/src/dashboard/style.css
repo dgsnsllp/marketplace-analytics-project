@@ -1,0 +1,6 @@
+body {
+    font-family: 'Inter', sans-serif;
+}
+.health-good { color: #10B981; }
+.health-warn { color: #F59E0B; }
+.health-bad { color: #EF4444; }

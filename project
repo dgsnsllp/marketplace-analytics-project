@@ -1,0 +1,119 @@
+You are an Autonomous Senior Data Architect and Full-Stack Machine Learning Engineer.
+Your task is to build and deploy the entire "E-BDAD: E-Commerce Behavioral Diagnostic & Actionable Dashboard" project locally, from scratch, end-to-end, following the complete master specification below.
+
+Strict Directives:
+1. Follow the 8 execution phases in order. Do not skip any phase or leave placeholder/mockup code.
+2. Implement the full 100k synthetic session generator with all 8 causal behavioral friction scenarios.
+3. Build the feature engineering pipeline using DuckDB and train the LightGBM classifier with Stratified 5-Fold CV (ensuring ROC-AUC >= 0.82).
+4. Implement the SHAP TreeExplainer and the Turkish Diagnostic Action Translation Engine.
+5. Create the FastAPI REST backend with all specified diagnostic, overview, and what-if counterfactual endpoints.
+6. Create the interactive Single-Page Dashboard (Tailwind CSS, Apache ECharts/Chart.js) mounted directly on FastAPI.
+7. Implement all test suites in tests/ and ensure 100% pass rate with pytest.
+8. Create run_system.py to orchestrate the entire process and launch the system at http://127.0.0.1:8000.
+9. Provide quantitative proof logs in logs/ after each phase.
+
+================================================================================
+MASTER SPECIFICATION & BLUEPRINT
+================================================================================
+
+# 1. Target Directory & File Tree
+ebdad-core/
+├── data/
+│   ├── raw_products.parquet
+│   ├── raw_sessions.parquet
+│   └── processed_dataset.parquet
+├── models/
+│   ├── lightgbm_model.pkl
+│   ├── scaler.pkl
+│   └── kmeans_cluster.pkl
+├── src/
+│   ├── __init__.py
+│   ├── config.py
+│   ├── generator/
+│   │   ├── __init__.py
+│   │   └── synthetic_engine.py
+│   ├── features/
+│   │   ├── __init__.py
+│   │   └── feature_pipeline.py
+│   ├── ml/
+│   │   ├── __init__.py
+│   │   ├── train_model.py
+│   │   ├── explainability.py
+│   │   └── clustering.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── main.py
+│   │   ├── routes.py
+│   │   └── schemas.py
+│   └── dashboard/
+│       ├── index.html
+│       ├── app.js
+│       └── style.css
+├── tests/
+│   ├── __init__.py
+│   ├── test_data_integrity.py
+│   ├── test_ml_pipeline.py
+│   ├── test_shap_diagnostics.py
+│   └── test_api_endpoints.py
+├── logs/
+├── requirements.txt
+├── run_system.py
+└── README.md
+
+# 2. Data Schemas & 8 Causal Friction Hypotheses
+Product Catalog (1,000 items):
+- product_id (P-1000..P-1999), category (T-shirt, Shoes, Electronics, Watch, Home & Living), base_price, image_count (1..8), description_word_count (10..450), variant_count (1..14), has_size_chart (0/1), rating (1.0..5.0), review_count (0..1200).
+
+Session Interactions (100,000 rows across ~35k sessions):
+- session_id, user_id, product_id, dwell_time_seconds, scroll_depth_pct, variant_clicks, reviews_expanded, added_to_cart (0/1), purchased (0/1).
+
+Causal Rules to Embed:
+- SC-01: image_count == 1 and dwell_time > 40s -> P(cart) *= 0.25
+- SC-02: category in ['T-shirt', 'Shoes'] and variant_count == 1 -> P(purchase|cart) *= 0.30
+- SC-03: description_word_count < 30 -> P(dwell < 6s) = 0.80, P(cart) = 0.02
+- SC-04: price > 1.35 * category_median_price -> P(cart) *= 0.40
+- SC-05: review_count < 3 and scroll_depth > 0.70 -> P(cart) *= 0.35
+- SC-06: category in ['T-shirt', 'Shoes'] and has_size_chart == 0 -> P(cart) *= 0.50
+- SC-07: rating >= 4.5 and review_count > 50 and reviews_expanded == 1 -> P(cart) *= 2.10
+- SC-08: variant_clicks > 6 and dwell_time > 90s and purchased == 0 -> Friction marker.
+
+# 3. Feature Engineering Math
+- PRI = Price / Median(Category_Price)
+- VRS = min(1.0, image_count / 5) * 0.7 + (has_size_chart * 0.3)
+- EDI = dwell_time_seconds / max(1, scroll_depth_pct * 100)
+- SPI = log(1 + review_count) * (rating / 5.0)
+
+# 4. ML, SHAP & Turkish Diagnostic Translator
+- LightGBM Binary Classifier on `purchased` target (5-Fold Stratified CV, ROC-AUC >= 0.82).
+- K-Means (k=4) for shopper intent clustering.
+- SHAP TreeExplainer extracting negative contributors with threshold tau = -0.05.
+- Diagnostic Translation Rules:
+  * image_count <= 2 & shap < -0.08: "Kritik Hata: Yetersiz Görsel Sayısı" (En az 4 farklı açıdan çekilmiş görsel yükleyin).
+  * variant_count <= 1 & shap < -0.06: "Varyant / Beden Seçeneği Yok" (En az 3 farklı beden/renk ekleyin).
+  * has_size_chart == 0 & shap < -0.05: "Beden Tablosu Eksik" (Standart beden tablosu görseli ekleyin).
+  * description_word_count < 50 & shap < -0.07: "Çok Kısa Ürün Açıklaması" (Açıklamayı en az 100 kelimeye çıkarın).
+  * price_ratio > 1.25 & shap < -0.10: "Kategori Ortalamasının Üzerinde Fiyat" (Fiyatı kategori medyanına yaklaştırın).
+
+# 5. FastAPI Endpoints & Contracts
+- GET /api/health
+- GET /api/overview (Total Sessions, Funnel stats, Friction Rate, Recoverable Revenue)
+- GET /api/diagnostics/products (Paginated list with Health Index and SHAP actions)
+- GET /api/diagnostics/products/{product_id} (SHAP waterfall and category benchmark)
+- POST /api/simulator/what-if (Takes new_image_count, new_price, new_variant_count, add_size_chart, new_description_word_count -> returns before/after conversion probability and uplift)
+
+# 6. Interactive Dashboard (SPA)
+- Mount static HTML/JS/CSS on FastAPI root (/).
+- Responsive Tailwind CSS + Apache ECharts / Chart.js.
+- Sections: Executive KPI Cards, Friction Funnel, Product Health Data Grid, Smart Action Center, and Interactive What-If Simulator Modal.
+
+# 7. Phased Execution Order
+- Phase 1: Environment & Directory Skeleton Creation
+- Phase 2: Synthetic Data Engine (100k rows) & test_data_integrity.py
+- Phase 3: DuckDB Feature Pipeline
+- Phase 4: LightGBM Training, K-Means & test_ml_pipeline.py
+- Phase 5: SHAP Engine, Turkish Rules & test_shap_diagnostics.py
+- Phase 6: FastAPI Endpoints & test_api_endpoints.py
+- Phase 7: Dashboard UI (HTML5/Tailwind/ECharts)
+- Phase 8: run_system.py Orchestrator (Verify all tests, start server at http://127.0.0.1:8000)
+
+Begin execution starting from Phase 1 now.
